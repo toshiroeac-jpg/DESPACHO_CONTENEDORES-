@@ -323,6 +323,7 @@ function slugify(str){
 let INVENTORY_DATA = {};
 let inventorySheetId = "1ab-mtHuVKYzbVw17hhefOBuOBbQGUK3YIw3NYWiZ1P4";     // precargado
 let inventorySheetName = "MAESTRO";   // nombre exacto de la pestana a leer
+let inventorySheetGid = "1300728517"; // gid (id numerico de pestana) de MAESTRO, necesario para el export real
 let invLastUpdate = null;
 let invPollInterval = null;
 let invLastErrorKind = null; // 'permisos' | 'hoja' | 'red' | null
@@ -347,6 +348,12 @@ function extractSheetId(input){
   if(m) return m[1];
   if(/^[a-zA-Z0-9-_]{20,}$/.test(input.trim())) return input.trim();
   return null;
+}
+
+// Extrae el gid (id numerico de pestana) de un link, si viene incluido (ej: #gid=123 o ?gid=123)
+function extractGid(input){
+  const m = input.match(/[?#&]gid=(\d+)/);
+  return m ? m[1] : null;
 }
 
 function findCol(headers, keywords){
@@ -443,12 +450,15 @@ function parseCSV(text){
 // intente "adivinar" donde termina la tabla (por eso no tiene techo de filas: sea que
 // tengas 1,000 o 50,000 contenedores, siempre trae el total real).
 async function fetchInventoryCSV(){
+  // /export es la funcion real de "descargar como CSV" de Sheets: vuelca la hoja
+  // completa tal cual esta, SIN el motor de consultas de gviz (que es el que
+  // trae el problema de "adivinar" donde termina la tabla). Por eso no tiene techo.
   const url = 'https://docs.google.com/spreadsheets/d/' + inventorySheetId +
-    '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(inventorySheetName) +
+    '/export?format=csv&gid=' + encodeURIComponent(inventorySheetGid) +
     '&_=' + Date.now();
   const res = await fetch(url);
   if(!res.ok){
-    if(res.status === 400 || res.status === 404) throw { kind:'hoja', message:'No se encontro la hoja "' + inventorySheetName + '" (HTTP ' + res.status + ')' };
+    if(res.status === 400 || res.status === 404) throw { kind:'hoja', message:'No se encontro la pestana (HTTP ' + res.status + ')' };
     throw { kind:'permisos', message:'HTTP ' + res.status };
   }
   const text = await res.text();
@@ -543,7 +553,9 @@ async function connectInventorySheet(){
   const id = extractSheetId(raw);
   if(!id){ showToast('No pude identificar el ID del Sheet en ese link'); return; }
   inventorySheetId = id;
-  try{ await db.collection('config').doc('inventory').set({ sheetId: id, sheetName: inventorySheetName }); }catch(e){}
+  const gid = extractGid(raw);
+  if(gid) inventorySheetGid = gid;
+  try{ await db.collection('config').doc('inventory').set({ sheetId: id, sheetName: inventorySheetName, sheetGid: inventorySheetGid }); }catch(e){}
   await fetchInventorySheet(false);
   startInventoryPolling();
 }
@@ -570,6 +582,7 @@ async function initInventorySource(){
       const d = doc.data();
       if(d.sheetId) inventorySheetId = d.sheetId;
       if(d.sheetName) inventorySheetName = d.sheetName;
+      if(d.sheetGid) inventorySheetGid = d.sheetGid;
     }
   }catch(e){}
 
