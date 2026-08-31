@@ -350,7 +350,8 @@ function extractSheetId(input){
 }
 
 function findCol(headers, keywords){
-  const norm = headers.map(h => (h||'').toString().trim().toUpperCase());
+  const norm = headers.map(h => (h||'').toString().trim().toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')); // quita acentos (SECCIÓN -> SECCION)
   for(const kw of keywords){
     const idx = norm.findIndex(h => h.includes(kw));
     if(idx !== -1) return idx;
@@ -453,7 +454,9 @@ function fetchGvizJsonp(){
 
     const url = 'https://docs.google.com/spreadsheets/d/' + inventorySheetId +
       '/gviz/tq?tqx=out:json;responseHandler:' + cbName +
-      '&sheet=' + encodeURIComponent(inventorySheetName) + '&_=' + Date.now();
+      '&sheet=' + encodeURIComponent(inventorySheetName) +
+      '&range=A1:I5000' + // rango fijo y amplio: evita que Google "adivine mal" el final si hay filas vacias en medio
+      '&_=' + Date.now();
     script.src = url;
     document.head.appendChild(script);
   });
