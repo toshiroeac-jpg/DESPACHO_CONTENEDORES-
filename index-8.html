@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Despacho de Contenedores</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root{
+    --bg:#14181D; --panel:#1D232B; --panel-raised:#242C36; --line:#333D49;
+    --yellow:#F2B705; --text:#EDEEEA; --text-dim:#9AA4B0;
+    --ok:#4C9A6A; --ok-bg:rgba(76,154,106,0.14);
+    --wait:#9AA4B0; --wait-bg:rgba(154,164,176,0.14);
+    --transit:#F2B705; --transit-bg:rgba(242,183,5,0.14);
+    --danger:#C1543C; --whatsapp:#3EBD6E;
+    --norte:#5B8DEF; --norte-bg:rgba(91,141,239,0.14);
+    --sur:#E08A3C; --sur-bg:rgba(224,138,60,0.14);
+    --este:#9B6FD1; --este-bg:rgba(155,111,209,0.14);
+    --oeste:#3CB5A8; --oeste-bg:rgba(60,181,168,0.14);
+    --general:#C7C2B0; --general-bg:rgba(199,194,176,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; padding:20px 14px 60px; }
+  .wrap{ max-width:640px; margin:0 auto; }
+
+  header{ display:flex; align-items:center; gap:12px; margin-bottom:6px; padding-bottom:16px; border-bottom:2px solid var(--line); }
+  .plate{ font-family:'Space Mono',monospace; font-weight:700; font-size:13px; color:var(--bg); background:var(--yellow); padding:6px 9px; border-radius:4px; letter-spacing:0.5px; white-space:nowrap; }
+  h1{ font-family:'Oswald',sans-serif; font-weight:700; font-size:22px; letter-spacing:0.3px; margin:0; text-transform:uppercase; }
+  .subtitle{ color:var(--text-dim); font-size:13px; margin-top:2px; }
+
+  .live-row{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim); margin:10px 0 18px; }
+  .live-dot{ width:7px; height:7px; border-radius:50%; background:var(--ok); flex-shrink:0; animation: pulse 2s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  .tabs{ display:flex; gap:6px; margin-bottom:20px; background:var(--panel); padding:4px; border-radius:10px; border:1px solid var(--line); }
+  .tab{ flex:1; text-align:center; padding:10px 8px; font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.4px; text-transform:uppercase; color:var(--text-dim); border-radius:7px; cursor:pointer; transition:all .15s ease; user-select:none; border:none; background:transparent; }
+  .tab.active{ background:var(--yellow); color:var(--bg); }
+
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; }
+  .panel h2{ font-family:'Oswald',sans-serif; font-size:15px; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 14px 0; color:var(--yellow); display:flex; align-items:center; gap:8px; }
+
+  label{ display:block; font-size:12px; color:var(--text-dim); margin-bottom:5px; font-weight:600; }
+  input, select{ width:100%; background:var(--panel-raised); border:1px solid var(--line); color:var(--text); padding:11px 12px; border-radius:8px; font-size:14px; font-family:'Inter',sans-serif; margin-bottom:14px; }
+  input:focus, select:focus{ outline:2px solid var(--yellow); outline-offset:1px; border-color:var(--yellow); }
+  input::placeholder{ color:#5B6470; }
+
+  button.primary{ width:100%; background:var(--yellow); color:var(--bg); border:none; padding:12px; border-radius:8px; font-family:'Oswald',sans-serif; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; }
+  button.primary:active{ transform:scale(0.98); }
+
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .chip-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+  .chip{ padding:10px 6px; text-align:center; border-radius:8px; cursor:pointer; font-family:'Oswald',sans-serif; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.3px; border:1.5px solid var(--line); color:var(--text-dim); user-select:none; transition:all .12s ease; }
+  .chip[data-a="norte"].selected{ background:var(--norte-bg); border-color:var(--norte); color:var(--norte); }
+  .chip[data-a="sur"].selected{ background:var(--sur-bg); border-color:var(--sur); color:var(--sur); }
+  .chip[data-a="este"].selected{ background:var(--este-bg); border-color:var(--este); color:var(--este); }
+  .chip[data-a="oeste"].selected{ background:var(--oeste-bg); border-color:var(--oeste); color:var(--oeste); }
+  .chip[data-a="general"].selected{ background:var(--general-bg); border-color:var(--general); color:var(--general); }
+
+  .mov-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+  .mov-grid.three-col{ grid-template-columns:1fr 1fr 1fr; }
+  .mov-chip{ padding:11px 6px; text-align:center; border-radius:8px; cursor:pointer; font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.4px; border:1.5px solid var(--line); color:var(--text-dim); }
+  .mov-chip[data-m="descarga"].selected{ background:rgba(91,141,239,0.14); border-color:var(--norte); color:var(--norte); }
+  .mov-chip[data-m="retiro"].selected{ background:rgba(224,138,60,0.14); border-color:var(--sur); color:var(--sur); }
+  .mov-chip[data-m="racks_sello"].selected{ background:rgba(199,194,176,0.18); border-color:var(--general); color:var(--general); }
+
+  .history-note{ background:rgba(242,183,5,0.10); border:1px solid var(--yellow-dim,#7A6104); border-left:3px solid var(--yellow); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:12px; color:var(--text-dim); }
+  .history-note b{ color:var(--yellow); }
+  .history-note ul{ margin:6px 0 0; padding-left:18px; }
+  .history-note li{ margin-bottom:2px; }
+
+  .filter-row{ display:flex; gap:6px; overflow-x:auto; margin-bottom:14px; padding-bottom:2px; }
+  .filter-chip{ flex-shrink:0; padding:7px 13px; border-radius:20px; font-size:12px; font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; border:1.5px solid var(--line); color:var(--text-dim); cursor:pointer; white-space:nowrap; }
+  .filter-chip.active[data-a="todos"]{ background:var(--yellow); border-color:var(--yellow); color:var(--bg); }
+  .filter-chip.active[data-a="norte"]{ background:var(--norte-bg); border-color:var(--norte); color:var(--norte); }
+  .filter-chip.active[data-a="sur"]{ background:var(--sur-bg); border-color:var(--sur); color:var(--sur); }
+  .filter-chip.active[data-a="este"]{ background:var(--este-bg); border-color:var(--este); color:var(--este); }
+  .filter-chip.active[data-a="oeste"]{ background:var(--oeste-bg); border-color:var(--oeste); color:var(--oeste); }
+  .filter-chip.active[data-a="general"]{ background:var(--general-bg); border-color:var(--general); color:var(--general); }
+  .filter-chip.active[data-a="entregado"]{ background:var(--ok-bg); border-color:var(--ok); color:var(--ok); }
+
+  .card{ background:var(--panel-raised); border:1px solid var(--line); border-left:4px solid var(--text-dim); border-radius:8px; padding:13px 14px; margin-bottom:10px; position:relative; }
+  .card.anden-norte{ border-left-color:var(--norte); }
+  .card.anden-sur{ border-left-color:var(--sur); }
+  .card.anden-este{ border-left-color:var(--este); }
+  .card.anden-oeste{ border-left-color:var(--oeste); }
+  .card.anden-general{ border-left-color:var(--general); }
+  .card.is-new{ box-shadow:0 0 0 1.5px var(--yellow); }
+
+  .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .card-id{ font-family:'Space Mono',monospace; font-weight:700; font-size:14px; letter-spacing:0.5px; color:var(--text); }
+  .card-dest{ font-size:13px; color:var(--text-dim); margin-top:3px; }
+  .card-driver{ font-size:12px; color:var(--text-dim); margin-top:6px; }
+  .card-driver b{ color:var(--text); }
+  .card-zona{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+
+  .badges{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .badge{ font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; padding:4px 9px; border-radius:20px; white-space:nowrap; }
+  .badge.pendiente{ background:var(--wait-bg); color:var(--wait); }
+  .badge.en_camino{ background:var(--transit-bg); color:var(--transit); }
+  .badge.entregado{ background:var(--ok-bg); color:var(--ok); }
+  .badge.anden-tag.norte{ background:var(--norte-bg); color:var(--norte); }
+  .badge.anden-tag.sur{ background:var(--sur-bg); color:var(--sur); }
+  .badge.anden-tag.este{ background:var(--este-bg); color:var(--este); }
+  .badge.anden-tag.oeste{ background:var(--oeste-bg); color:var(--oeste); }
+  .badge.anden-tag.general{ background:var(--general-bg); color:var(--general); }
+  .badge.new-tag{ background:var(--yellow); color:var(--bg); }
+  .badge.mov-tag{ background:var(--panel); border:1px solid var(--line); color:var(--text-dim); }
+
+  .card-actions{ display:flex; gap:8px; margin-top:12px; }
+  .card-actions select{ margin-bottom:0; flex:1; font-size:13px; padding:8px; }
+  .del-btn{ background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:8px; padding:8px 12px; font-size:13px; cursor:pointer; font-family:'Inter',sans-serif; }
+
+  .empty{ text-align:center; padding:30px 14px; color:var(--text-dim); font-size:13px; line-height:1.6; }
+  .empty .big{ font-size:32px; margin-bottom:6px; }
+
+  .count-row{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .count-chip{ flex:1; min-width:90px; background:var(--panel-raised); border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; }
+  .count-chip .n{ font-family:'Oswald',sans-serif; font-size:20px; font-weight:700; }
+  .count-chip .l{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.4px; margin-top:2px; }
+
+  .driver-select-row{ display:flex; gap:8px; align-items:center; }
+  .driver-select-row select{ flex:1; margin-bottom:0; }
+  .notif-pill{ background:var(--yellow); color:var(--bg); font-family:'Oswald',sans-serif; font-weight:700; font-size:12px; padding:5px 10px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+
+  .wa-btn{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; background:var(--whatsapp); color:#0B1D12; border:none; padding:11px; border-radius:8px; font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.4px; cursor:pointer; margin-top:8px; }
+  .wa-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+
+  .phone-row{ display:flex; gap:8px; align-items:flex-end; }
+  .phone-row > div{ flex:1; }
+  .contact-list{ display:flex; flex-direction:column; gap:8px; }
+  .contact-row{ display:flex; align-items:center; gap:8px; background:var(--panel-raised); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+  .contact-row .name{ flex:1; font-size:13px; }
+  .contact-row input{ margin-bottom:0; flex:1.2; font-size:13px; padding:8px; }
+
+  .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--yellow); color:var(--bg); padding:12px 18px; border-radius:8px; font-size:13px; font-weight:600; font-family:'Inter',sans-serif; opacity:0; transition:opacity .25s ease; pointer-events:none; z-index:50; box-shadow:0 6px 18px rgba(0,0,0,0.4); max-width:90%; text-align:center; }
+  .toast.show{ opacity:1; }
+
+  .hint{ font-size:11px; color:var(--text-dim); margin-top:-6px; margin-bottom:14px; }
+
+  .offline-banner{
+    display:none; align-items:center; gap:10px;
+    background: rgba(193,84,60,0.14); border:1px solid var(--danger);
+    border-radius: 10px; padding: 11px 14px; margin-bottom: 16px;
+    font-size: 12.5px; line-height:1.5;
+  }
+  .offline-banner.show{ display:flex; }
+  .offline-banner .dot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; margin-top:3px; }
+  .offline-banner b{ color: var(--danger); }
+</style>
+</head>
+<body>
+<script>
+  // Muestra cualquier error tecnico directo en pantalla (para diagnosticar sin acceso a consola del navegador)
+  // Se activa de inmediato (no espera a que cargue la pagina) para atrapar tambien errores tempranos.
+  function __showDebugError(text){
+    var el = document.getElementById('debugError');
+    if(!el) return;
+    el.style.display = 'block';
+    el.textContent = text;
+  }
+  window.onerror = function(msg, url, line, col){
+    __showDebugError('Error tecnico: ' + msg + ' (linea ' + line + ')');
+    return false;
+  };
+  window.addEventListener('unhandledrejection', function(e){
+    var r = e.reason;
+    __showDebugError('Error tecnico (promesa): ' + (r && r.message ? r.message : JSON.stringify(r)));
+  });
+</script>
+<div id="debugError" style="display:none; background:#5c1a1a; color:#fff; padding:10px 14px; font-size:12px; word-break:break-word; position:relative; z-index:999;"></div>
+<div class="wrap">
+
+  <header>
+    <div class="plate">DC-01</div>
+    <div>
+      <h1>Despacho</h1>
+      <div class="subtitle">Asignación de contenedores por andén</div>
+    </div>
+  </header>
+  <div class="live-row"><span class="live-dot" id="liveDot"></span><span id="liveText">Activa · en línea</span></div>
+  <div class="offline-banner" id="offlineBanner">
+    <span class="dot"></span>
+    <span><b>Sin conexión.</b> <span id="offlineDetail">Mostrando la última información disponible.</span></span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabAdmin" onclick="switchTab('admin')">Asignar</button>
+    <button class="tab" id="tabDriver" onclick="switchTab('driver')">Mi transporte</button>
+    <button class="tab" id="tabContacts" onclick="switchTab('contacts')">Contactos</button>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div id="viewAdmin">
+    <!-- ZONA ADMINISTRADOR: requiere PIN -->
+    <div class="panel" id="adminLoginBox" style="display:none;">
+      <h2>🔒 Acceso de administrador</h2>
+      <div id="adminLoginContent"></div>
+    </div>
+
+    <div id="adminUnlocked" style="display:none;">
+    <div class="panel" id="invSourcePanel">
+      <h2>Inventario en vivo <span id="invLiveDot" style="width:7px;height:7px;border-radius:50%;background:var(--wait);display:inline-block;margin-left:4px;"></span></h2>
+      <div id="invSourceStatus" class="hint" style="margin-bottom:10px;"></div>
+      <div class="phone-row">
+        <div>
+          <label for="invUrl">Link CSV de "inventario_general2026" (Google Sheets → Publicar en la web)</label>
+          <input id="invUrl" placeholder="https://docs.google.com/.../pub?output=csv" />
+        </div>
+      </div>
+      <button class="primary" onclick="connectInventorySheet()" style="margin-top:2px;">Conectar / Actualizar ahora</button>
+    </div>
+
+    <div class="panel">
+      <h2>Nueva asignación</h2>
+
+      <div class="two-col">
+        <div>
+          <label for="cid">ID del contenedor</label>
+          <input id="cid" placeholder="MSCU-4471820" oninput="checkHistory(); checkInventory();" />
+        </div>
+        <div>
+          <label for="cdriver">Transportista</label>
+          <input id="cdriver" placeholder="Nombre" />
+        </div>
+      </div>
+
+      <label for="cdest">Destino</label>
+      <input id="cdest" placeholder="Ej: Bodega Norte, Zona 4" />
+
+      <div id="historyNote"></div>
+
+      <label>Tipo de movimiento</label>
+      <div class="mov-grid three-col" id="movGrid">
+        <div class="mov-chip" data-m="descarga" onclick="selectMov('descarga')">Descarga</div>
+        <div class="mov-chip" data-m="retiro" onclick="selectMov('retiro')">Retiro (vacío)</div>
+        <div class="mov-chip" data-m="racks_sello" onclick="selectMov('racks_sello')">Racks con sello</div>
+      </div>
+
+      <label>Andén de destino</label>
+      <div class="chip-grid" id="andenGrid">
+        <div class="chip" data-a="norte" onclick="selectAnden('norte')">Norte</div>
+        <div class="chip" data-a="sur" onclick="selectAnden('sur')">Sur</div>
+        <div class="chip" data-a="este" onclick="selectAnden('este')">Este</div>
+        <div class="chip" data-a="oeste" onclick="selectAnden('oeste')">Oeste</div>
+        <div class="chip" data-a="general" onclick="selectAnden('general')">General</div>
+      </div>
+
+      <label for="czona">Zona actual del material</label>
+      <input id="czona" placeholder="Ej: Patio 3, fila B / Bloque 12" />
+      <div id="invStatus" class="hint" style="margin-top:-10px;"></div>
+
+      <button class="primary" onclick="addContainer()">Asignar contenedor</button>
+      <div id="notifyAfterAssign"></div>
+    </div>
+
+    <div class="panel" style="padding-bottom:6px;">
+      <h2>Panorama general</h2>
+      <div class="count-row" id="countRow"></div>
+      <button class="wa-btn" style="width:100%; margin-top:12px;" onclick="exportTodayToExcel()">📊 Exportar contenedores de hoy a Excel</button>
+    </div>
+
+    <div class="panel">
+      <h2>Administradores</h2>
+      <div class="hint">Cualquiera con nombre y PIN aquí puede crear, editar, borrar y exportar contenedores.</div>
+      <div class="two-col">
+        <div>
+          <label for="newAdminName">Nombre</label>
+          <input id="newAdminName" placeholder="Ej: Juan Pérez" />
+        </div>
+        <div>
+          <label for="newAdminPin">PIN (4 dígitos)</label>
+          <input id="newAdminPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+        </div>
+      </div>
+      <button class="primary" onclick="addAdmin()">Agregar administrador</button>
+      <div class="contact-list" id="adminManageList" style="margin-top:14px;"></div>
+      <button class="del-btn" style="width:100%; margin-top:14px;" onclick="adminLogout()">Cerrar sesión de administrador</button>
+    </div>
+    </div>
+    <!-- FIN ZONA ADMINISTRADOR -->
+
+    <!-- ZONA PÚBLICA: visible para cualquiera, incluidos transportistas -->
+    <div class="filter-row" id="filterRow"></div>
+    <div id="adminList"></div>
+  </div>
+
+  <!-- DRIVER VIEW -->
+  <div id="viewDriver" style="display:none;">
+    <div class="panel">
+      <h2>¿Quién eres?</h2>
+      <div class="driver-select-row">
+        <select id="driverSelect" onchange="onDriverChange()"></select>
+        <span class="notif-pill" id="notifPill" style="display:none;"></span>
+      </div>
+      <div class="hint">Elige tu nombre para ver solo tus contenedores. Lo nuevo se marca hasta que lo revisas.</div>
+    </div>
+    <div id="driverList"></div>
+  </div>
+
+  <!-- CONTACTS VIEW -->
+  <div id="viewContacts" style="display:none;">
+    <div class="panel">
+      <h2>Directorio de transportistas</h2>
+      <div class="hint">Guarda el número de WhatsApp de cada transportista una sola vez. Se usa para enviarles solo su información, sin grupos.</div>
+      <div class="contact-list" id="contactList"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let containers = [];
+let contacts = {};
+let admins = {}; // slug -> {name, pin}
+let verifiedAdminSlug = null;
+let currentTab = 'admin';
+let selectedAnden = 'general';
+let selectedMov = 'descarga';
+let adminFilter = 'todos';
+let currentDriverLastSeen = 0;
+let pollInterval = null;
+let wakeLock = null;
+const sessionStart = Date.now();
+let lastSyncTime = null;
+let isOffline = false;
+
+// === FIREBASE ===
+const firebaseConfig = {
+  apiKey: "AIzaSyA5o_RsawDEtzw6KLxYtVpFdSisz1o1_7c",
+  authDomain: "despacho-contenesores.firebaseapp.com",
+  projectId: "despacho-contenesores",
+  storageBucket: "despacho-contenesores.firebasestorage.app",
+  messagingSenderId: "225616053453",
+  appId: "1:225616053453:web:e21fe217cef38aa9d6d584",
+  measurementId: "G-RGX4V7PXL0"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+function slugify(str){
+  return String(str||'').trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // quita acentos
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+
+// === INVENTARIO EN VIVO (Google Sheet "inventario_general2026", hoja MAESTRO) ===
+// Usa la API gviz de Google Sheets: identifica la hoja por NOMBRE (no por gid),
+// funciona con permiso "Cualquier usuario con el enlace - Lector" y no depende de "Publicar en la web".
+let INVENTORY_DATA = {};
+let inventorySheetId = "1ab-mtHuVKYzbVw17hhefOBuOBbQGUK3YIw3NYWiZ1P4";     // precargado
+let inventorySheetName = "MAESTRO";   // nombre exacto de la pestana a leer
+let inventorySheetGid = "1300728517"; // gid (id numerico de pestana) de MAESTRO, necesario para el export real
+let invLastUpdate = null;
+let invPollInterval = null;
+let invLastErrorKind = null; // 'permisos' | 'hoja' | 'red' | null
+
+function normalizeId(v){
+  return String(v || '').trim().toUpperCase().replace(/\s+/g,'');
+}
+
+function lookupInventory(id){
+  const key = normalizeId(id);
+  if(!key) return undefined;
+  if(INVENTORY_DATA[key]) return INVENTORY_DATA[key];
+  const stripped = key.replace(/[-_]/g,'');
+  const found = Object.keys(INVENTORY_DATA).find(k => k.replace(/[-_]/g,'') === stripped);
+  return found ? INVENTORY_DATA[found] : undefined;
+}
+
+// Extrae el ID del archivo de cualquier link de Google Sheets que pegue el usuario
+// (edit, export, pub, o el ID solo)
+function extractSheetId(input){
+  const m = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if(m) return m[1];
+  if(/^[a-zA-Z0-9-_]{20,}$/.test(input.trim())) return input.trim();
+  return null;
+}
+
+// Extrae el gid (id numerico de pestana) de un link, si viene incluido (ej: #gid=123 o ?gid=123)
+function extractGid(input){
+  const m = input.match(/[?#&]gid=(\d+)/);
+  return m ? m[1] : null;
+}
+
+function findCol(headers, keywords){
+  const norm = headers.map(h => (h||'').toString().trim().toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')); // quita acentos (SECCIÓN -> SECCION)
+  for(const kw of keywords){
+    const idx = norm.findIndex(h => h.includes(kw));
+    if(idx !== -1) return idx;
+  }
+  return -1;
+}
+
+function buildInventoryFromTable(headers, rows){
+  const iCont = findCol(headers, ['CONTENEDOR']);
+  const iSeccion = findCol(headers, ['SECCION']);
+  const iCarrier = findCol(headers, ['CARRIER']);
+  const iHilera = findCol(headers, ['HILERA','ZONA']);
+  const iUbicacion = findCol(headers, ['UBICACION']);
+  const iSecuencia = findCol(headers, ['SECUENCIA','NUMERO','N°','N.']);
+  if(iCont === -1) throw { kind:'hoja', message:'No se encontro la columna CONTENEDOR en la hoja "' + inventorySheetName + '"' };
+
+  const data = {};
+  for(const row of rows){
+    const cont = row[iCont];
+    if(!cont || !cont.trim()) continue;
+    const key = normalizeId(cont);
+    data[key] = {
+      seccion: iSeccion !== -1 ? (row[iSeccion]||'').trim() : '',
+      carrier: iCarrier !== -1 ? (row[iCarrier]||'').trim() : '',
+      hilera: iHilera !== -1 ? (row[iHilera]||'').trim() : '',
+      ubicacion: iUbicacion !== -1 ? (row[iUbicacion]||'').trim() : '',
+      secuencia: iSecuencia !== -1 ? (row[iSecuencia]||'').trim() : '',
+    };
+  }
+  return data;
+}
+
+function setInvLiveDot(state){
+  const dot = document.getElementById('invLiveDot');
+  if(!dot) return;
+  dot.style.background = state === 'ok' ? 'var(--ok)' : state === 'warn' ? 'var(--danger)' : 'var(--wait)';
+}
+
+function invStatusText(){
+  const el = document.getElementById('invSourceStatus');
+  if(!el) return;
+  const count = Object.keys(INVENTORY_DATA).length;
+  if(!inventorySheetId){
+    el.innerHTML = 'Sin conectar. Pega el link de tu Google Sheet y presiona "Conectar".';
+    setInvLiveDot('off');
+    return;
+  }
+  if(invLastUpdate && !invLastErrorKind){
+    const t = new Date(invLastUpdate).toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
+    el.innerHTML = 'Conectado - ' + count + ' contenedores - ultima actualizacion ' + t;
+    setInvLiveDot('ok');
+  } else if(invLastErrorKind === 'permisos'){
+    el.innerHTML = 'Sin acceso al Sheet. En Compartir, pon "Cualquier usuario con el enlace - Lector".';
+    setInvLiveDot('warn');
+  } else if(invLastErrorKind === 'hoja'){
+    el.innerHTML = 'No se pudo leer la hoja "' + inventorySheetName + '". Revisa el nombre exacto de la pestana.';
+    setInvLiveDot('warn');
+  } else if(invLastErrorKind === 'red'){
+    el.innerHTML = 'No se pudo conectar (tiempo de espera agotado). Revisa el link y que el Sheet este compartido.';
+    setInvLiveDot('warn');
+  } else {
+    el.innerHTML = 'Conectando...';
+    setInvLiveDot('off');
+  }
+}
+
+// Parser CSV simple, soporta comillas y comas dentro de campos
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0; i<text.length; i++){
+    const c = text[i], next = text[i+1];
+    if(inQuotes){
+      if(c === '"' && next === '"'){ field += '"'; i++; }
+      else if(c === '"'){ inQuotes = false; }
+      else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\n' || c === '\r'){
+        if(field !== '' || row.length){ row.push(field); rows.push(row); row=[]; field=''; }
+        if(c === '\r' && next === '\n') i++;
+      } else field += c;
+    }
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Metodo principal: CSV directo. Trae la hoja completa tal cual esta, sin que Google
+// intente "adivinar" donde termina la tabla (por eso no tiene techo de filas: sea que
+// tengas 1,000 o 50,000 contenedores, siempre trae el total real).
+async function fetchInventoryCSV(){
+  // /export es la funcion real de "descargar como CSV" de Sheets: vuelca la hoja
+  // completa tal cual esta, SIN el motor de consultas de gviz (que es el que
+  // trae el problema de "adivinar" donde termina la tabla). Por eso no tiene techo.
+  const url = 'https://docs.google.com/spreadsheets/d/' + inventorySheetId +
+    '/export?format=csv&gid=' + encodeURIComponent(inventorySheetGid) +
+    '&_=' + Date.now();
+  const res = await fetch(url);
+  if(!res.ok){
+    if(res.status === 400 || res.status === 404) throw { kind:'hoja', message:'No se encontro la pestana (HTTP ' + res.status + ')' };
+    throw { kind:'permisos', message:'HTTP ' + res.status };
+  }
+  const text = await res.text();
+  if(text.trim().toLowerCase().startsWith('<')){
+    // Google regreso una pagina HTML (login/permiso) en vez de datos CSV
+    throw { kind:'permisos', message:'El Sheet no esta compartido correctamente (llego una pagina en vez de datos).' };
+  }
+  const rows = parseCSV(text).filter(r => r.some(c => c && c.trim()));
+  if(rows.length < 2) throw { kind:'hoja', message:'La hoja esta vacia o no se pudo leer.' };
+  const headers = rows[0];
+  return buildInventoryFromTable(headers, rows.slice(1));
+}
+
+async function fetchInventorySheet(silent){
+  if(!inventorySheetId) return;
+  try{
+    const data = await fetchInventoryCSV(); // unico metodo: sin techo de filas, confiable
+    INVENTORY_DATA = data;
+    invLastUpdate = Date.now();
+    invLastErrorKind = null;
+    try{ localStorage.setItem('inventorySnapshot', JSON.stringify({data, ts: invLastUpdate})); }catch(e){}
+    invStatusText();
+    if(!silent) showToast('Inventario actualizado: ' + Object.keys(data).length + ' contenedores');
+  }catch(e){
+    invLastErrorKind = (e && e.kind) || 'red';
+    if(!silent) showToast((e && e.message) ? e.message : 'No se pudo leer el Sheet');
+    invStatusText();
+  }
+}
+
+async function connectInventorySheet(){
+  const raw = document.getElementById('invUrl').value.trim();
+  if(!raw){ showToast('Pega el link del Sheet primero'); return; }
+  const id = extractSheetId(raw);
+  if(!id){ showToast('No pude identificar el ID del Sheet en ese link'); return; }
+  inventorySheetId = id;
+  const gid = extractGid(raw);
+  if(gid) inventorySheetGid = gid;
+  try{ await db.collection('config').doc('inventory').set({ sheetId: id, sheetName: inventorySheetName, sheetGid: inventorySheetGid }); }catch(e){}
+  await fetchInventorySheet(false);
+  startInventoryPolling();
+}
+
+function startInventoryPolling(){
+  if(invPollInterval) clearInterval(invPollInterval);
+  invPollInterval = setInterval(() => fetchInventorySheet(true), 45 * 1000); // cada 45 segundos
+}
+
+async function initInventorySource(){
+  // Cache local para mostrar algo de inmediato mientras llega la config compartida de Firestore
+  try{
+    const snap = localStorage.getItem('inventorySnapshot');
+    if(snap){
+      const parsed = JSON.parse(snap);
+      INVENTORY_DATA = parsed.data || {};
+      invLastUpdate = parsed.ts || null;
+    }
+  }catch(e){}
+
+  try{
+    const doc = await db.collection('config').doc('inventory').get();
+    if(doc.exists){
+      const d = doc.data();
+      if(d.sheetId) inventorySheetId = d.sheetId;
+      if(d.sheetName) inventorySheetName = d.sheetName;
+      if(d.sheetGid) inventorySheetGid = d.sheetGid;
+    }
+  }catch(e){}
+
+  document.getElementById('invUrl').value = inventorySheetId
+    ? ('https://docs.google.com/spreadsheets/d/' + inventorySheetId + '/edit')
+    : '';
+  invStatusText();
+  if(inventorySheetId){
+    fetchInventorySheet(true);
+    startInventoryPolling();
+  }
+}
+
+function checkInventory(){
+  const idVal = document.getElementById('cid').value.trim();
+  const statusEl = document.getElementById('invStatus');
+  const zonaEl = document.getElementById('czona');
+  if(!idVal){ statusEl.innerHTML = ''; zonaEl.dataset.autofilled = ''; return; }
+
+  const rec = lookupInventory(idVal);
+  if(rec){
+    const partes = [
+      rec.ubicacion,
+      rec.hilera ? ('Hilera ' + rec.hilera) : null,
+      rec.secuencia ? ('Secuencia ' + rec.secuencia) : null
+    ].filter(Boolean).join(' - ');
+    if(!zonaEl.value || zonaEl.dataset.autofilled === '1'){
+      zonaEl.value = partes || (rec.seccion || '');
+      zonaEl.dataset.autofilled = '1';
+    }
+    statusEl.innerHTML = '<span style="color:var(--ok);">' + String.fromCodePoint(0x2713) + ' Encontrado en inventario (' + escapeHtml(rec.seccion||'-') + ')' + (rec.carrier ? ' - ' + escapeHtml(rec.carrier) : '') + '</span>';
+  } else {
+    statusEl.innerHTML = '<span style="color:var(--danger);">' + String.fromCodePoint(0x26A0) + ' Sin registro en inventario</span>';
+    zonaEl.dataset.autofilled = '';
+  }
+}
+
+const STATUS_LABELS = { pendiente:'Pendiente', en_camino:'En camino', entregado:'Entregado' };
+const ANDEN_LABELS = { norte:'Norte', sur:'Sur', este:'Este', oeste:'Oeste', general:'General' };
+const MOV_LABELS = { descarga:'Descarga', retiro:'Retiro (vacío)', racks_sello:'Racks con sello' };
+
+let containersUnsub = null, contactsUnsub = null, adminsUnsub = null;
+
+async function loadData(){
+  try{
+    await auth.signInAnonymously();
+  }catch(e){
+    setOffline(true);
+    showToast('No se pudo conectar con la base de datos. Revisa tu internet.');
+    return;
+  }
+
+  containersUnsub = db.collection('containers').orderBy('createdAt','desc').onSnapshot(
+    snap => {
+      containers = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          _fsid: d.id,
+          id: data.id, dest: data.dest, driver: data.driver, zona: data.zona,
+          anden: data.anden, tipo: data.tipo, status: data.status,
+          createdAt: data.createdAt && data.createdAt.toMillis ? data.createdAt.toMillis() : (data.createdAt || Date.now())
+        };
+      });
+      setOffline(false);
+      lastSyncTime = Date.now();
+      renderCounts();
+      renderFilterRow();
+      if(currentTab === 'admin') renderAdminList();
+      if(currentTab === 'contacts') renderContacts();
+      if(currentTab === 'driver') renderDriverView();
+      updateLiveText();
+    },
+    err => { setOffline(true); updateLiveText(); }
+  );
+
+  contactsUnsub = db.collection('contacts').onSnapshot(snap => {
+    contacts = {};
+    snap.docs.forEach(d => { const v = d.data(); contacts[v.driver] = v.phone || ''; });
+    if(currentTab === 'contacts') renderContacts();
+  });
+
+  adminsUnsub = db.collection('admins').onSnapshot(snap => {
+    admins = {};
+    snap.docs.forEach(d => { admins[d.id] = d.data(); });
+    if(currentTab === 'admin'){
+      renderAdminGate();
+      renderAdminList(); // re-renderiza para actualizar el candado de eliminar
+    }
+  });
+
+  try{
+    const saved = localStorage.getItem('verifiedAdminSlug');
+    if(saved) verifiedAdminSlug = saved;
+  }catch(e){}
+
+  renderAll();
+  requestWakeLock();
+}
+
+function setOffline(state){
+  isOffline = state;
+  const banner = document.getElementById('offlineBanner');
+  const dot = document.getElementById('liveDot');
+  const detail = document.getElementById('offlineDetail');
+  if(state){
+    banner.classList.add('show');
+    dot.style.background = 'var(--danger)';
+    if(lastSyncTime){
+      const t = new Date(lastSyncTime).toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
+      detail.textContent = 'Mostrando la información de las ' + t + '. Se actualizará sola al recuperar señal.';
+    } else {
+      detail.textContent = 'Aún no se pudo cargar información. Revisa tu wifi o datos móviles.';
+    }
+  } else {
+    banner.classList.remove('show');
+    dot.style.background = 'var(--ok)';
+  }
+}
+
+// lastSeen es solo un indicador local de "ya revise esto en este dispositivo", no necesita sincronizarse entre dispositivos
+async function getLastSeen(driverSlug){
+  try{ return Number(localStorage.getItem('lastseen:' + driverSlug) || 0); }catch(e){ return 0; }
+}
+async function setLastSeen(driverSlug, ts){
+  try{ localStorage.setItem('lastseen:' + driverSlug, String(ts)); }catch(e){}
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  document.getElementById('tabAdmin').classList.toggle('active', tab==='admin');
+  document.getElementById('tabDriver').classList.toggle('active', tab==='driver');
+  document.getElementById('tabContacts').classList.toggle('active', tab==='contacts');
+  document.getElementById('viewAdmin').style.display = tab==='admin' ? 'block' : 'none';
+  document.getElementById('viewDriver').style.display = tab==='driver' ? 'block' : 'none';
+  document.getElementById('viewContacts').style.display = tab==='contacts' ? 'block' : 'none';
+  if(tab==='admin'){ renderAdminGate(); renderCounts(); renderFilterRow(); renderAdminList(); }
+  if(tab==='driver') onDriverChange();
+  if(tab==='contacts') renderContacts();
+}
+
+function selectAnden(a){
+  selectedAnden = a;
+  document.querySelectorAll('.chip').forEach(el=> el.classList.toggle('selected', el.dataset.a === a));
+}
+function selectMov(m){
+  selectedMov = m;
+  document.querySelectorAll('.mov-chip').forEach(el=> el.classList.toggle('selected', el.dataset.m === m));
+}
+selectAnden('general');
+selectMov('descarga');
+
+function checkHistory(){
+  const id = document.getElementById('cid').value.trim().toUpperCase();
+  const note = document.getElementById('historyNote');
+  if(!id){ note.innerHTML = ''; return; }
+  const prior = containers.filter(c => c.id.toUpperCase() === id);
+  if(prior.length === 0){ note.innerHTML = ''; return; }
+  const items = prior.slice(0,4).map(c => {
+    const d = new Date(c.createdAt);
+    const fecha = d.toLocaleDateString('es', {day:'2-digit', month:'short'}) + ' ' + d.toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
+    return `<li>${MOV_LABELS[c.tipo] || 'Movimiento'} · ${ANDEN_LABELS[c.anden]} · ${STATUS_LABELS[c.status]} · ${fecha}</li>`;
+  }).join('');
+  note.innerHTML = `<div class="history-note"><b>Este contenedor ya aparece ${prior.length} vez${prior.length===1?'':'es'} en el sistema:</b><ul>${items}</ul>Revisa si esta nueva solicitud es un retiro de lo ya descargado.</div>`;
+}
+
+async function addContainer(){
+  if(!verifiedAdminSlug || !admins[verifiedAdminSlug]){ showToast('Solo un administrador puede asignar contenedores.'); return; }
+  const id = document.getElementById('cid').value.trim();
+  const dest = document.getElementById('cdest').value.trim();
+  const driver = document.getElementById('cdriver').value.trim();
+  const zona = document.getElementById('czona').value.trim();
+
+  if(!id || !dest || !driver){
+    showToast('Completa ID, destino y transportista');
+    return;
+  }
+
+  try{
+    await db.collection('containers').add({
+      id, dest, driver, zona,
+      anden: selectedAnden,
+      tipo: selectedMov,
+      status: 'pendiente',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }catch(e){
+    showToast('No se pudo guardar. Revisa tu conexión e intenta de nuevo.');
+    return;
+  }
+
+  document.getElementById('cid').value = '';
+  document.getElementById('cdest').value = '';
+  document.getElementById('cdriver').value = '';
+  document.getElementById('czona').value = '';
+  document.getElementById('historyNote').innerHTML = '';
+  selectAnden('general');
+  selectMov('descarga');
+
+  showToast('Asignado a ' + driver + ' · ' + MOV_LABELS[selectedMov] + ' · Andén ' + ANDEN_LABELS[selectedAnden]);
+
+  const notifyEl = document.getElementById('notifyAfterAssign');
+  if(contacts[driver]){
+    notifyEl.innerHTML = `<button class="wa-btn" style="width:100%; margin-top:10px;" onclick="sendWhatsapp('${escapeAttr(driver)}'); document.getElementById('notifyAfterAssign').innerHTML='';">📲 Notificar a ${escapeHtml(driver)} por WhatsApp</button>`;
+  } else {
+    notifyEl.innerHTML = `<div class="hint" style="margin-top:10px;">${escapeHtml(driver)} no tiene número guardado — agrégalo en "Contactos" para poder notificarle.</div>`;
+  }
+}
+
+async function updateStatus(index, newStatus){
+  const c = containers[index];
+  if(!c) return;
+  try{
+    await db.collection('containers').doc(c._fsid).update({ status: newStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  }catch(e){ showToast('No se pudo actualizar. Intenta de nuevo.'); }
+}
+async function deleteContainer(index){
+  if(!verifiedAdminSlug || !admins[verifiedAdminSlug]){ showToast('Solo un administrador puede eliminar.'); return; }
+  const c = containers[index];
+  if(!c) return;
+  try{
+    await db.collection('containers').doc(c._fsid).delete();
+  }catch(e){ showToast('No se pudo eliminar. Intenta de nuevo.'); }
+}
+
+function setAdminFilter(a){ adminFilter = a; renderFilterRow(); renderAdminList(); }
+
+function renderFilterRow(){
+  const opts = ['todos','norte','sur','este','oeste','general','entregado'];
+  const el = document.getElementById('filterRow');
+  el.innerHTML = opts.map(a => `
+    <div class="filter-chip ${adminFilter===a?'active':''}" data-a="${a}" onclick="setAdminFilter('${a}')">
+      ${a==='todos' ? 'Todos' : a==='entregado' ? 'Historial' : ANDEN_LABELS[a]}
+    </div>
+  `).join('');
+}
+
+function renderCounts(){
+  const total = containers.length;
+  const pend = containers.filter(c=>c.status==='pendiente').length;
+  const trans = containers.filter(c=>c.status==='en_camino').length;
+  const ent = containers.filter(c=>c.status==='entregado').length;
+  document.getElementById('countRow').innerHTML = `
+    <div class="count-chip"><div class="n">${total}</div><div class="l">Total</div></div>
+    <div class="count-chip"><div class="n" style="color:var(--wait)">${pend}</div><div class="l">Pendientes</div></div>
+    <div class="count-chip"><div class="n" style="color:var(--transit)">${trans}</div><div class="l">En camino</div></div>
+    <div class="count-chip"><div class="n" style="color:var(--ok)">${ent}</div><div class="l">Entregados</div></div>
+  `;
+}
+
+function renderAdminList(){
+  const el = document.getElementById('adminList');
+  let list = containers.map((c,i)=>({...c,i}));
+
+  if(adminFilter === 'entregado'){
+    list = list.filter(c => c.status === 'entregado');
+  } else if(adminFilter !== 'todos'){
+    list = list.filter(c => c.anden === adminFilter && c.status !== 'entregado');
+  } else {
+    list = list.filter(c => c.status !== 'entregado');
+  }
+
+  if(list.length === 0){
+    el.innerHTML = `<div class="panel"><div class="empty"><div class="big">📦</div>No hay contenedores en esta vista.</div></div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(c => `
+    <div class="card anden-${c.anden}">
+      <div class="card-top">
+        <div>
+          <div class="card-id">${escapeHtml(c.id)}</div>
+          <div class="card-dest">${escapeHtml(c.dest)}</div>
+          <div class="card-driver">Transportista: <b>${escapeHtml(c.driver)}</b></div>
+          ${c.zona ? `<div class="card-zona">📍 Material en: ${escapeHtml(c.zona)}</div>` : ''}
+        </div>
+        <div class="badges">
+          <span class="badge mov-tag">${MOV_LABELS[c.tipo] || 'Descarga'}</span>
+          <span class="badge anden-tag ${c.anden}">${ANDEN_LABELS[c.anden]}</span>
+          <span class="badge ${c.status}">${STATUS_LABELS[c.status]}</span>
+        </div>
+      </div>
+      <div class="card-actions">
+        <select onchange="updateStatus(${c.i}, this.value)">
+          <option value="pendiente" ${c.status==='pendiente'?'selected':''}>Pendiente</option>
+          <option value="en_camino" ${c.status==='en_camino'?'selected':''}>En camino</option>
+          <option value="entregado" ${c.status==='entregado'?'selected':''}>Entregado</option>
+        </select>
+        ${verifiedAdminSlug && admins[verifiedAdminSlug]
+          ? `<button class="del-btn" onclick="deleteContainer(${c.i})">Eliminar</button>`
+          : `<button class="del-btn" disabled style="opacity:0.35; border-style:dashed; cursor:not-allowed;" title="Solo administradores pueden eliminar">🔒 Eliminar</button>`
+        }
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderDriverSelect(){
+  const sel = document.getElementById('driverSelect');
+  const names = [...new Set(containers.map(c => c.driver))].sort((a,b)=>a.localeCompare(b));
+  const prev = sel.value;
+  if(names.length === 0){ sel.innerHTML = `<option value="">Sin transportistas todavia</option>`; return; }
+  sel.innerHTML = names.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+  if(names.includes(prev)) sel.value = prev;
+}
+
+async function onDriverChange(){
+  renderDriverSelect();
+  const selected = document.getElementById('driverSelect').value;
+  currentDriverLastSeen = selected ? await getLastSeen(selected) : 0;
+  await renderDriverView();
+  if(selected){
+    setTimeout(async ()=>{
+      if(document.getElementById('driverSelect').value === selected){
+        await setLastSeen(selected, Date.now());
+      }
+    }, 3000);
+  }
+}
+
+async function renderDriverView(){
+  const selected = document.getElementById('driverSelect').value;
+  const el = document.getElementById('driverList');
+  const pill = document.getElementById('notifPill');
+
+  if(!selected){
+    el.innerHTML = `<div class="panel"><div class="empty"><div class="big">🚚</div>Cuando el administrador asigne contenedores, tu nombre aparecera aqui.</div></div>`;
+    pill.style.display = 'none';
+    return;
+  }
+
+  const mine = containers.map((c,i)=>({...c,i})).filter(c => c.driver === selected && c.status !== 'entregado');
+  const newCount = mine.filter(c => c.createdAt > currentDriverLastSeen).length;
+
+  pill.style.display = newCount > 0 ? 'inline-block' : 'none';
+  if(newCount > 0) pill.textContent = newCount + (newCount===1 ? ' nuevo' : ' nuevos');
+
+  if(mine.length === 0){
+    el.innerHTML = `<div class="panel"><div class="empty"><div class="big">✅</div>No tienes contenedores pendientes ahora mismo.</div></div>`;
+    return;
+  }
+
+  mine.sort((a,b)=> b.createdAt - a.createdAt);
+
+  el.innerHTML = mine.map(c => {
+    const isNew = c.createdAt > currentDriverLastSeen;
+    return `
+    <div class="card anden-${c.anden} ${isNew ? 'is-new' : ''}">
+      <div class="card-top">
+        <div>
+          <div class="card-id">${escapeHtml(c.id)}</div>
+          <div class="card-dest">${escapeHtml(c.dest)}</div>
+          ${c.zona ? `<div class="card-zona">📍 Material en: ${escapeHtml(c.zona)}</div>` : ''}
+        </div>
+        <div class="badges">
+          ${isNew ? '<span class="badge new-tag">Nuevo</span>' : ''}
+          <span class="badge mov-tag">${MOV_LABELS[c.tipo] || 'Descarga'}</span>
+          <span class="badge anden-tag ${c.anden}">${ANDEN_LABELS[c.anden]}</span>
+          <span class="badge ${c.status}">${STATUS_LABELS[c.status]}</span>
+        </div>
+      </div>
+    </div>
+  `}).join('');
+}
+
+function renderContacts(){
+  const names = [...new Set(containers.map(c => c.driver))].sort((a,b)=>a.localeCompare(b));
+  const el = document.getElementById('contactList');
+  if(names.length === 0){
+    el.innerHTML = `<div class="empty"><div class="big">📇</div>Agrega transportistas desde "Asignar" y apareceran aqui para guardar su numero.</div>`;
+    return;
+  }
+  el.innerHTML = names.map(d => `
+    <div class="contact-row">
+      <div class="name">${escapeHtml(d)}</div>
+      <input type="tel" placeholder="Ej: 5215512345678" value="${escapeHtml(contacts[d]||'')}" onchange="setContact('${escapeAttr(d)}', this.value)" />
+      <button class="wa-btn" style="padding:8px 10px;" onclick="sendWhatsapp('${escapeAttr(d)}')" title="Enviar por WhatsApp">📲</button>
+    </div>
+  `).join('') + `
+    <div class="hint" style="margin-top:8px;">El numero debe incluir codigo de pais sin signos ni espacios (ej: 521 para Mexico + su numero). Toca 📲 junto a un nombre para enviarle sus contenedores pendientes por WhatsApp.</div>
+  `;
+}
+
+async function setContact(driver, phone){
+  const clean = phone.replace(/[^0-9]/g, '');
+  contacts[driver] = clean;
+  try{
+    await db.collection('contacts').doc(slugify(driver)).set({ driver, phone: clean });
+  }catch(e){ showToast('No se pudo guardar el contacto.'); }
+}
+
+function buildDriverMessage(driver){
+  const mine = containers.filter(c => c.driver === driver && c.status !== 'entregado');
+  if(mine.length === 0) return null;
+  let msg = `Hola ${driver}, tienes ${mine.length} contenedor${mine.length===1?'':'es'} asignado${mine.length===1?'':'s'}:\n\n`;
+  mine.forEach(c => {
+    msg += `• ${c.id} — ${MOV_LABELS[c.tipo]||'Descarga'}\n  Destino: ${c.dest}\n  Andén: ${ANDEN_LABELS[c.anden]}${c.zona ? '\n  Material en: ' + c.zona : ''}\n  Estado: ${STATUS_LABELS[c.status]}\n\n`;
+  });
+  return msg.trim();
+}
+
+function sendWhatsapp(driver){
+  const phone = contacts[driver];
+  if(!phone){ showToast('Agrega el número de ' + driver + ' primero'); return; }
+  const msg = buildDriverMessage(driver);
+  if(!msg){ showToast(driver + ' no tiene contenedores pendientes'); return; }
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+function sendAllWhatsapp(){
+  const drivers = [...new Set(containers.filter(c=>c.status!=='entregado').map(c=>c.driver))];
+  const withPhone = drivers.filter(d => contacts[d]);
+  if(withPhone.length === 0){ showToast('Agrega al menos un número de teléfono'); return; }
+  // Abre uno por uno (el navegador puede bloquear varias ventanas; se abre la primera y avisa)
+  sendWhatsapp(withPhone[0]);
+  if(withPhone.length > 1){
+    showToast('Abriendo WhatsApp de ' + withPhone[0] + '. Repite para los demás.');
+  }
+}
+
+// === ADMINISTRADORES (PIN) — protege solo la zona superior de "Asignar" ===
+// (crear, ver inventario en vivo, exportar, eliminar). La lista y filtros de abajo son publicos.
+function renderAdminGate(){
+  const loginBox = document.getElementById('adminLoginBox');
+  const unlocked = document.getElementById('adminUnlocked');
+  const content = document.getElementById('adminLoginContent');
+  if(!loginBox || !unlocked || !content) return;
+
+  if(verifiedAdminSlug && admins[verifiedAdminSlug]){
+    loginBox.style.display = 'none';
+    unlocked.style.display = 'block';
+    renderAdminManagement();
+    return;
+  }
+
+  unlocked.style.display = 'none';
+  loginBox.style.display = 'block';
+
+  const slugs = Object.keys(admins);
+  if(slugs.length === 0){
+    content.innerHTML = `
+      <div class="hint">Todavia no hay ningun administrador configurado. Crea el primero para poder asignar, exportar o eliminar contenedores.</div>
+      <label for="bootAdminName">Tu nombre</label>
+      <input id="bootAdminName" placeholder="Ej: Juan Pérez" />
+      <label for="bootAdminPin">Crea un PIN (4 dígitos)</label>
+      <input id="bootAdminPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <button class="primary" onclick="bootstrapFirstAdmin()">Crear administrador</button>
+    `;
+  } else {
+    const options = slugs.sort((a,b)=>admins[a].name.localeCompare(admins[b].name))
+      .map(s => `<option value="${s}">${escapeHtml(admins[s].name)}</option>`).join('');
+    content.innerHTML = `
+      <label for="adminLoginSelect">Tu nombre</label>
+      <select id="adminLoginSelect"><option value="">Selecciona...</option>${options}</select>
+      <label for="adminLoginPin">Tu PIN</label>
+      <input id="adminLoginPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <button class="primary" onclick="verifyAdminPin()">Entrar</button>
+      <div class="hint" style="margin-top:10px;">Puedes ver y filtrar los contenedores sin iniciar sesión, más abajo en esta misma pantalla.</div>
+    `;
+  }
+}
+
+async function bootstrapFirstAdmin(){
+  const name = document.getElementById('bootAdminName').value.trim();
+  const pin = document.getElementById('bootAdminPin').value.trim();
+  if(!name){ showToast('Escribe tu nombre'); return; }
+  if(!/^[0-9]{4}$/.test(pin)){ showToast('El PIN debe ser de 4 dígitos'); return; }
+  const slug = slugify(name);
+  try{
+    await db.collection('admins').doc(slug).set({ name, pin });
+    verifiedAdminSlug = slug;
+    try{ localStorage.setItem('verifiedAdminSlug', slug); }catch(e){}
+    showToast('Administrador creado. ¡Bienvenido, ' + name + '!');
+  }catch(e){ showToast('No se pudo crear. Intenta de nuevo.'); }
+}
+
+function verifyAdminPin(){
+  const slug = document.getElementById('adminLoginSelect').value;
+  const pin = document.getElementById('adminLoginPin').value.trim();
+  if(!slug){ showToast('Elige tu nombre primero'); return; }
+  if(!admins[slug] || admins[slug].pin !== pin){ showToast('PIN incorrecto'); return; }
+  verifiedAdminSlug = slug;
+  try{ localStorage.setItem('verifiedAdminSlug', slug); }catch(e){}
+  renderAdminGate();
+  renderAdminList(); // para desbloquear los botones de eliminar
+}
+
+function adminLogout(){
+  verifiedAdminSlug = null;
+  try{ localStorage.removeItem('verifiedAdminSlug'); }catch(e){}
+  renderAdminGate();
+  renderAdminList();
+}
+
+async function addAdmin(){
+  const nameEl = document.getElementById('newAdminName');
+  const pinEl = document.getElementById('newAdminPin');
+  const name = nameEl.value.trim();
+  const pin = pinEl.value.trim();
+  if(!name){ showToast('Escribe el nombre'); return; }
+  if(!/^[0-9]{4}$/.test(pin)){ showToast('El PIN debe ser de 4 dígitos'); return; }
+  const slug = slugify(name);
+  try{
+    await db.collection('admins').doc(slug).set({ name, pin });
+    nameEl.value = ''; pinEl.value = '';
+    showToast('Administrador agregado: ' + name);
+  }catch(e){ showToast('No se pudo guardar.'); }
+}
+
+async function deleteAdmin(slug){
+  if(Object.keys(admins).length <= 1){ showToast('Debe quedar al menos un administrador.'); return; }
+  if(!confirm('¿Quitar a ' + (admins[slug]?admins[slug].name:'') + ' como administrador?')) return;
+  try{
+    await db.collection('admins').doc(slug).delete();
+    if(slug === verifiedAdminSlug) adminLogout();
+  }catch(e){ showToast('No se pudo eliminar.'); }
+}
+
+async function changeAdminPin(slug){
+  const nuevo = prompt('Nuevo PIN de 4 dígitos para ' + admins[slug].name + ':');
+  if(nuevo === null) return;
+  if(!/^[0-9]{4}$/.test(nuevo.trim())){ showToast('El PIN debe ser de 4 dígitos'); return; }
+  try{ await db.collection('admins').doc(slug).update({ pin: nuevo.trim() }); showToast('PIN actualizado'); }
+  catch(e){ showToast('No se pudo actualizar.'); }
+}
+
+function renderAdminManagement(){
+  const el = document.getElementById('adminManageList');
+  if(!el) return;
+  const slugs = Object.keys(admins).sort((a,b)=> admins[a].name.localeCompare(admins[b].name));
+  el.innerHTML = slugs.map(s => `
+    <div class="contact-row">
+      <div class="name">${escapeHtml(admins[s].name)}${s===verifiedAdminSlug ? ' (tú)' : ''}</div>
+      <button class="del-btn" style="border-color:var(--line); color:var(--text-dim);" onclick="changeAdminPin('${s}')">PIN</button>
+      <button class="del-btn" onclick="deleteAdmin('${s}')">Quitar</button>
+    </div>
+  `).join('');
+}
+
+function exportTodayToExcel(){
+  if(!verifiedAdminSlug || !admins[verifiedAdminSlug]){ showToast('Solo un administrador puede exportar.'); return; }
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  const today = containers.filter(c => c.createdAt >= startOfDay);
+  if(today.length === 0){ showToast('No hay contenedores registrados hoy todavía.'); return; }
+
+  const rows = today
+    .sort((a,b) => a.createdAt - b.createdAt)
+    .map(c => {
+      const d = new Date(c.createdAt);
+      return {
+        'Fecha': d.toLocaleDateString('es-MX'),
+        'Hora': d.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}),
+        'Contenedor': c.id,
+        'Transportista': c.driver,
+        'Destino': c.dest,
+        'Andén': ANDEN_LABELS[c.anden] || c.anden,
+        'Tipo de movimiento': MOV_LABELS[c.tipo] || c.tipo,
+        'Zona/Ubicación': c.zona || '',
+        'Estado': STATUS_LABELS[c.status] || c.status,
+      };
+    });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:11},{wch:8},{wch:16},{wch:18},{wch:22},{wch:10},{wch:16},{wch:22},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Contenedores');
+
+  const fecha = now.toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'despacho-contenedores-' + fecha + '.xlsx');
+  showToast('Excel descargado: ' + today.length + ' contenedores de hoy');
+}
+
+function updateLiveText(){
+  const mins = Math.floor((Date.now() - sessionStart) / 60000);
+  const h = Math.floor(mins/60), m = mins%60;
+  const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const status = isOffline ? 'sin conexión' : 'actualizando sola';
+  document.getElementById('liveText').textContent = `Activa hace ${label} · ${status}`;
+}
+
+async function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+      document.addEventListener('visibilitychange', async ()=>{
+        if(wakeLock !== null && document.visibilityState === 'visible'){
+          try{ wakeLock = await navigator.wakeLock.request('screen'); }catch(e){}
+        }
+      });
+    }
+  }catch(e){ /* no soportado en este navegador; la app sigue funcionando igual */ }
+}
+
+function escapeHtml(str){ const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+function escapeAttr(str){ return String(str).replace(/'/g, "\\'"); }
+
+function renderAll(){
+  renderAdminGate();
+  renderCounts();
+  renderFilterRow();
+  renderAdminList();
+  updateLiveText();
+  if(currentTab === 'driver') renderDriverView();
+  if(currentTab === 'contacts') renderContacts();
+}
+
+(async function init(){
+  try{
+    await loadData();       // primero se autentica con Firebase
+    await initInventorySource();
+    setInterval(updateLiveText, 30000);
+  }catch(e){
+    __showDebugError('Error al iniciar la app: ' + (e && e.message ? e.message : JSON.stringify(e)));
+  }
+})();
+</script>
+</body>
+</html>
